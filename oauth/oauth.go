@@ -3,12 +3,13 @@ package oauth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mercadolibre/golang-restclient/rest"
-	"github.com/selvamshan/bookstore_oauth-go/oauth/errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mercadolibre/golang-restclient/rest"
+	"github.com/selvamshan/bookstore_oauth-go/oauth/errors"
 )
 
 const (
@@ -27,7 +28,7 @@ type AccessToken struct {
 
 var (
 	oauthRestClient = rest.RequestBuilder{
-		BaseUrl: "http://localhost:8080",
+		BaseURL: "http://localhost:8080",
 		Timeout: 200 * time.Millisecond,
 	}
 )
@@ -44,7 +45,7 @@ func GetCallerId(request *http.Request) int64 {
 		return 0
 	}
 
-	callerId, err := strconv.ParseInt(request.Header.Get(headerXCallerId, 10, 64))
+	callerId, err := strconv.ParseInt(request.Header.Get(headerXCallerId), 10, 64)
 	if err != nil {
 		return 0
 	}
@@ -56,7 +57,7 @@ func GetClientId(request *http.Request) int64 {
 		return 0
 	}
 
-	clientId, err := strconv.ParseInt(request.Header.Get(headerXClientId, 10, 64))
+	clientId, err := strconv.ParseInt(request.Header.Get(headerXClientId), 10, 64)
 	if err != nil {
 		return 0
 	}
@@ -69,11 +70,11 @@ func Authenticate(request *http.Request) *errors.RestErr {
 	}
 	cleanRequest(request)
 	accessTokenId := strings.TrimSpace(request.URL.Query().Get(paramAccessToken))
-	if accessToken == "" {
+	if accessTokenId == "" {
 		return nil
 	}
 
-	at, err := getAccessToken(accessTokenId)
+	at, err := GetAccessToken(accessTokenId)
 	if err != nil {
 		if err.Status == http.StatusNotFound {
 			return nil
@@ -85,15 +86,15 @@ func Authenticate(request *http.Request) *errors.RestErr {
 	return nil
 }
 
-func cleanReques(request *http.Request) {
+func cleanRequest(request *http.Request) {
 	if request == nil {
 		return
 	}
-	request.Header.Del(headerXclientId)
+	request.Header.Del(headerXClientId)
 	request.Header.Del(headerXCallerId)
 }
 
-func GetAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
+func GetAccessToken(accessTokenId string) (*AccessToken, *errors.RestErr) {
 	response := oauthRestClient.Get(fmt.Sprintf("oauth/access_token/%s", accessTokenId))
 	if response == nil || response.Response == nil {
 		return nil, errors.NewInternalServerError("invalid restclient response when trying to get access token")
@@ -103,7 +104,7 @@ func GetAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
 		if err := json.Unmarshal(response.Bytes(), &restErr); err != nil {
 			return nil, errors.NewInternalServerError("invalid error interface when trying to get access token")
 		}
-		
+
 		return nil, &restErr
 	}
 
