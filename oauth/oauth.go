@@ -108,7 +108,7 @@ func GetAccessToken(accessTokenId string) (*AccessToken, *errors.RestErr) {
 		return nil, &restErr
 	}
 
-	var at accessToken
+	var at AccessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
 		return nil, errors.NewInternalServerError("errors when trying to unmarshal access token response")
 	}
