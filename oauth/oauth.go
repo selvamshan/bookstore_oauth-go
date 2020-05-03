@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"errors"
 	"github.com/mercadolibre/golang-restclient/rest"
 	"github.com/selvamshan/bookstore_utils-go/rest_errors"
 )
@@ -64,7 +64,7 @@ func GetClientId(request *http.Request) int64 {
 	return clientId
 }
 
-func Authenticate(request *http.Request) *errors.RestErr {
+func Authenticate(request *http.Request) rest_errors.RestErr {
 	if request == nil {
 		return nil
 	}
@@ -76,7 +76,7 @@ func Authenticate(request *http.Request) *errors.RestErr {
 
 	at, err := GetAccessToken(accessTokenId)
 	if err != nil {
-		if err.Status == http.StatusNotFound {
+		if err.Status() == http.StatusNotFound {
 			return nil
 		}
 		return err
@@ -97,12 +97,12 @@ func cleanRequest(request *http.Request) {
 func GetAccessToken(accessTokenId string) (*AccessToken, rest_errors.RestErr) {
 	response := oauthRestClient.Get(fmt.Sprintf("/oauth/access_token/%s", accessTokenId))
 	if response == nil || response.Response == nil {
-		return nil, rest_errors.NewInternalServerError("invalid restclient response when trying to get access token")
+		return nil, rest_errors.NewInternalServerError("invalid restclient response when trying to get access token", errors.New("database error"))
 	}
 	if response.StatusCode > 299 {
-		var restErr errors.RestErr
+		var restErr rest_errors.RestErr
 		if err := json.Unmarshal(response.Bytes(), &restErr); err != nil {
-			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token")
+			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", errors.New("database error"))
 		}
 
 		return nil, restErr
@@ -110,7 +110,7 @@ func GetAccessToken(accessTokenId string) (*AccessToken, rest_errors.RestErr) {
 
 	var at AccessToken
 	if err := json.Unmarshal(response.Bytes(), &at); err != nil {
-		return nil, rest_errors.NewInternalServerError("errors when trying to unmarshal access token response")
+		return nil, rest_errors.NewInternalServerError("errors when trying to unmarshal access token response", errors.New("database error"))
 	}
 	return &at, nil
 }
