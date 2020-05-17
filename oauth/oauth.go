@@ -16,7 +16,6 @@ const (
 	headerXPublic   = "X-Public"
 	headerXClientId = "X-Client-Id"
 	headerXCallerId = "X-Caller-Id"
-
 	paramAccessToken = "access_token"
 )
 
@@ -100,12 +99,16 @@ func GetAccessToken(accessTokenId string) (*AccessToken, rest_errors.RestErr) {
 		return nil, rest_errors.NewInternalServerError("invalid restclient response when trying to get access token", errors.New("database error"))
 	}
 	if response.StatusCode > 299 {
-		var restErr rest_errors.RestErr
-		if err := json.Unmarshal(response.Bytes(), &restErr); err != nil {
-			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", errors.New("database error"))
+		// var restErr rest_errors.RestErr
+		// if err := json.Unmarshal(response.Bytes(), &restErr); err != nil {
+		// 	return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", errors.New("database error"))
+		// }
+		// return nil, restErr
+		apiErr, err := rest_errors.NewRestErrorFromBytes(response.Bytes())		
+		if err != nil {
+			return nil,  rest_errors.NewInternalServerError("invalid error interface when trying to login user", err)
 		}
-
-		return nil, restErr
+		return nil, apiErr
 	}
 
 	var at AccessToken
